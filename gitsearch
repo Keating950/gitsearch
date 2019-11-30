@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+command=$(printf " %q" python3 ./gitsearch.py "$@")
+eval $command
