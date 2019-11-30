@@ -3,6 +3,8 @@ import sys
 import curses
 import os
 
+# def format_results(results)
+
 
 def main(stdscr):
     arg_str = ""

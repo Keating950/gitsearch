@@ -2,7 +2,7 @@ import argparse
 import requests as r
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--query", metavar="query string", type=str, nargs=1,
                         help="A quoted query string")
@@ -13,12 +13,26 @@ def parse_args():
                         help="asc or desc. Default is descending")
     parser.add_argument("--lang", metavar="lang", type=str, nargs=1,
                         help="Restrict results by language.")
-    namespace_obj = parser.parse_args()
-    namespace_obj.query = str(namespace_obj.query[0]).split()
-    return namespace_obj
+    arg_namespace = parser.parse_args()
+    arg_namespace.query = str(arg_namespace.query[0]).split()
+    return arg_namespace
 
 
-def send_request(args):
+def format_query(args: argparse.Namespace):
+    qstring = ""
+    if type(args.query) == list:
+        qstring += f"{args.query[0]}"
+        for term in args.query[1:]:
+            qstring += f"+{term}"
+    else:
+        qstring = args.query
+    if args.lang is not None:
+        qstring += f"+language:{args.lang}"
+        delattr(args, "lang")
+    args.query = qstring
+
+
+def send_request(args: argparse.Namespace) -> list:
     param_dict = {"q": args.query}
     if args.sort != None:
         param_dict["sort"] = args.sort
@@ -34,21 +48,7 @@ def send_request(args):
     return resp.json()["items"]
 
 
-def format_query(args):
-    qstring = ""
-    if type(args.query) == list:
-        qstring += f"{args.query[0]}"
-        for term in args.query[1:]:
-            qstring += f"+{term}"
-    else:
-        qstring = args.query
-    if args.lang is not None:
-        qstring += f"+language:{args.lang}"
-        delattr(args, "lang")
-    args.query = qstring
-
-
-def fetch_results():
+def fetch_results() -> list:
     args = parse_args()
     format_query(args)
     results = send_request(args)
