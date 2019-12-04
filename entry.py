@@ -14,6 +14,10 @@ class Entry:
             self.numlines = 2
 
     def print_lines(self, scrn, pos):
-        scrn.addnstr(pos, 0, self.line0, curses.COLS - 1, curses.A_BOLD)
-        scrn.addnstr(pos + 1, 0, self.line1, curses.COLS - 1)
-        scrn.addnstr(pos + 2, 0, self.line1, curses.COLS - 1)
+        tmp_pos = pos
+        scrn.addnstr(tmp_pos, 0, self.line0, curses.COLS - 1, curses.A_BOLD)
+        tmp_pos+=1
+        if self.line1 is not None:
+            scrn.addnstr(tmp_pos, 0, self.line1, curses.COLS - 1)
+            tmp_pos+=1
+        scrn.addnstr(tmp_pos, 0, self.line2, curses.COLS - 1)

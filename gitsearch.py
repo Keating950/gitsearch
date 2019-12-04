@@ -1,3 +1,4 @@
+from entry import Entry
 import ResultFetcher
 import sys
 import curses
@@ -5,31 +6,24 @@ import os
 
 
 def format_results(results: list) -> list:
-    formatted = []
-    # @formatter:off
+    entries = []
     for repo in results:
         # codes in first line indicate to print in bold
-        formatted.append(
-            f"{repo['name']}    {repo['owner']['login']}    {repo['language']}    ☆{repo['stargazers_count']}"
-            )
-        formatted.append(repo['description'])
-        formatted.append(repo['url'])
-        formatted.append("\n")
-    # @formatter:on
-    return formatted
+        entry = Entry(repo['name'], repo['owner']['login'], int(repo['stargazers_count']),
+                      repo['url'], repo.get('language'), repo.get('description'),
+                      )
+        entries.append(entry)
+    return entries
 
 
 def init_pad(contents):
-    pad = curses.newpad(len(contents) + 1, curses.COLS)
+    sumlines = sum([entry.numlines for entry in contents]) + len(contents)
+    pad = curses.newpad(sumlines + 10, curses.COLS)
     line_position = 0
-    for idx, line in enumerate(contents):
-        if line is not None:
-            if idx % 4 == 0:
-                pad.addnstr(line_position, 0, line, curses.COLS - 1, curses.A_BOLD)
-            else:
-                pad.addnstr(line_position, 0, line, curses.COLS - 1)
-        else:
-            pad.addnstr(line_position, 0, "\n", curses.COLS - 1)
+    for entry in contents:
+        entry.print_lines(pad, line_position)
+        line_position += entry.numlines
+        pad.addch(line_position, 0, "\n")
         line_position += 1
     pad.refresh(0, 0, 0, 0, curses.LINES - 1, curses.COLS - 1)
     return pad
@@ -58,7 +52,7 @@ def main(stdscr):
         elif c in {curses.KEY_DOWN, curses.KEY_UP}:
             y, x = stdscr.getyx()
             if c == curses.KEY_DOWN:
-                if y == curses.LINES-1:
+                if y == curses.LINES - 1:
                     pad_pos += 1
                 else:
                     stdscr.move(y + 1, x)
