@@ -58,13 +58,16 @@ def main(stdscr):
         elif c in {curses.KEY_DOWN, curses.KEY_UP}:
             y, x = stdscr.getyx()
             if c == curses.KEY_DOWN:
-                if y + 1 >= curses.LINES:
+                if y == curses.LINES-1:
                     pad_pos += 1
                 else:
                     stdscr.move(y + 1, x)
             elif c == curses.KEY_UP:
-                if y - 1 < 0:
-                    pad_pos -= 1
+                if y == 0:
+                    if pad_pos > 0:
+                        pad_pos -= 1
+                    else:
+                        pass
                 else:
                     stdscr.move(y - 1, x)
 
