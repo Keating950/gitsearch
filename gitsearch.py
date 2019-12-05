@@ -2,7 +2,6 @@ from entry import Entry
 import ResultFetcher
 import sys
 import curses
-import os
 
 
 def make_entry_objects(results: list) -> list:
