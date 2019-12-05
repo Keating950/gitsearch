@@ -2,22 +2,6 @@ import argparse
 import requests as r
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--query", metavar="query string", type=str, nargs=1,
-                        help="A quoted query string")
-    parser.add_argument("--sort", metavar="sort by", type=str, nargs=1,
-                        help="sort by stars, forks, help-wanted-issues, or updated."
-                             "Default is best match.")
-    parser.add_argument("--order", metavar="order", type=str, nargs=1,
-                        help="asc or desc. Default is descending")
-    parser.add_argument("--lang", metavar="lang", type=str, nargs=1,
-                        help="Restrict results by language.")
-    arg_namespace = parser.parse_args()
-    arg_namespace.query = str(arg_namespace.query[0]).split()
-    return arg_namespace
-
-
 def format_query(args: argparse.Namespace):
     qstring = f"{args.query[0]}"
     if len(args.query) > 1:
@@ -45,8 +29,7 @@ def send_request(args: argparse.Namespace) -> list:
     return resp.json()["items"]
 
 
-def fetch_results() -> list:
-    args = parse_args()
+def fetch_results(args: argparse.Namespace) -> list:
     format_query(args)
     results = send_request(args)
     return results

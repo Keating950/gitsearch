@@ -1,7 +1,24 @@
 from entry import Entry
 import ResultFetcher
+import argparse
 import sys
 import curses
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--query", metavar="query string", type=str, nargs=1,
+                        help="A quoted query string")
+    parser.add_argument("--sort", metavar="sort by", type=str, nargs=1,
+                        help="sort by stars, forks, help-wanted-issues, or updated."
+                             "Default is best match.")
+    parser.add_argument("--order", metavar="order", type=str, nargs=1,
+                        help="asc or desc. Default is descending")
+    parser.add_argument("--lang", metavar="lang", type=str, nargs=1,
+                        help="Restrict results by language.")
+    arg_namespace = parser.parse_args()
+    arg_namespace.query = str(arg_namespace.query[0]).split()
+    return arg_namespace
 
 
 def make_entry_objects(results: list) -> list:
@@ -36,6 +53,7 @@ def input_stream(pad, pad_max_y: int):
 
     while True:
         c = stdscr.getch()
+
         if c == ord("j"):
             pad_pos += 1
         elif c == ord("k"):
@@ -48,7 +66,6 @@ def input_stream(pad, pad_max_y: int):
                     pad_pos += 1
                 else:
                     curses.setsyx(y + 1, x)
-
             elif c == curses.KEY_UP:
                 if y == 0:
                     if pad_pos > 0:
@@ -70,6 +87,7 @@ def input_stream(pad, pad_max_y: int):
                     pass
                 else:
                     curses.setsyx(y, x + 1)
+
         if pad_pos < pad_max_y:
             pad.refresh(pad_pos, 0, 0, 0, curses.LINES - 1, curses.COLS - 1)
         else:
@@ -80,8 +98,9 @@ def main(stdscr):
     arg_str = ""
     for i in sys.argv:
         arg_str += str(i)
-    results = ResultFetcher.fetch_results()
 
+    formatted_args = parse_args()
+    results = ResultFetcher.fetch_results(formatted_args)
     entry_list = make_entry_objects(results)
 
     results_pad = init_pad(entry_list)
