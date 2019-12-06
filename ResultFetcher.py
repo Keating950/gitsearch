@@ -3,10 +3,13 @@ import requests as r
 
 
 def format_query(args: argparse.Namespace):
+    # GitHub API expects multi-word queries to be joined together with the + symbol
     qstring = f"{args.query[0]}"
     if len(args.query) > 1:
         for term in args.query[1:]:
             qstring += f"+{term}"
+    # it also expects language to be part of the query string, so merging those
+    # attributes here
     if args.lang is not None:
         qstring += f"+language:{args.lang}"
         delattr(args, "lang")

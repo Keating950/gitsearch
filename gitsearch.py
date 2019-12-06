@@ -17,6 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lang", metavar="lang", type=str, nargs=1,
                         help="Restrict results by language.")
     arg_namespace = parser.parse_args()
+    # splitting multi-word double-quoted query arguments
     arg_namespace.query = str(arg_namespace.query[0]).split()
     return arg_namespace
 
@@ -24,7 +25,6 @@ def parse_args() -> argparse.Namespace:
 def make_entry_objects(results: list) -> list:
     entries = []
     for repo in results:
-        # codes in first line indicate to print in bold
         entry = Entry(repo['name'], repo['owner']['login'], int(repo['stargazers_count']),
                       repo['url'], repo.get('language'), repo.get('description'),
                       )
@@ -42,7 +42,6 @@ def init_pad(contents):
         line_position += entry.numlines
         pad.addch(line_position, 0, "\n")
         line_position += 1
-    pad.refresh(0, 0, 0, 0, curses.LINES - 1, curses.COLS - 1)
     return pad
 
 
@@ -88,10 +87,10 @@ def input_stream(pad, pad_max_y: int):
                 else:
                     curses.setsyx(y, x + 1)
 
-        if pad_pos < pad_max_y:
+        if pad_pos < pad_max_y-curses.LINES:
             pad.refresh(pad_pos, 0, 0, 0, curses.LINES - 1, curses.COLS - 1)
         else:
-            pad_pos = pad_max_y
+            pad_pos = (pad_max_y-curses.LINES)-1
 
 
 def main(stdscr):
@@ -104,6 +103,7 @@ def main(stdscr):
     entry_list = make_entry_objects(results)
 
     results_pad = init_pad(entry_list)
+    results_pad.refresh(0, 0, 0, 0, curses.LINES - 1, curses.COLS - 1)
     pad_max_y = sum([entry.numlines for entry in entry_list]) + len(entry_list) + 1
     input_stream(results_pad, pad_max_y)
 

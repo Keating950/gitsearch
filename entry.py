@@ -13,7 +13,7 @@ class Entry:
         else:
             self.numlines = 2
 
-    def print_lines(self, scrn, pos) -> int:
+    def print_lines(self, scrn, pos):
         tmp_pos = pos
         scrn.addnstr(tmp_pos, 0, self.line0, curses.COLS - 1)
         tmp_pos += 1
@@ -21,4 +21,4 @@ class Entry:
             scrn.addnstr(tmp_pos, 0, self.line1, curses.COLS - 1)
             tmp_pos += 1
         scrn.addnstr(tmp_pos, 0, self.line2, curses.COLS - 1)
-        return tmp_pos
+
