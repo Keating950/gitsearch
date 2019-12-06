@@ -52,39 +52,38 @@ def input_stream(pad, pad_max_y: int):
     stdscr.refresh()
 
     def mv_cursor_and_scroll(pad_pos, c):
+        # scroll
         if c == curses.KEY_DOWN:
-            pad_pos += 1
+            return pad_pos + 1
         elif c == curses.KEY_UP:
-            pad_pos -= 1
+            return pad_pos - 1
 
+        # cursor movement and, if in first or last line, scroll
         y, x = curses.getsyx()
         if c == ord("j"):
             if y == curses.LINES - 1:
-                pad_pos += 1
-                return pad_pos
+                return pad_pos + 1
             else:
                 curses.setsyx(y + 1, x)
         elif c == ord("k"):
             if y == 0:
                 if pad_pos > 0:
-                    pad_pos -= 1
+                    return pad_pos - 1
                 else:
                     return pad_pos
             else:
                 curses.setsyx(y - 1, x)
+        elif c in {curses.KEY_LEFT, ord("h")}:
+            if x - 1 < 0:
+                return pad_pos
+            else:
+                curses.setsyx(y, x - 1)
+        elif c in {curses.KEY_RIGHT, ord("l")}:
+            if x + 1 > curses.COLS - 1:
+                return pad_pos
+            else:
+                curses.setsyx(y, x + 1)
 
-        elif c in {curses.KEY_LEFT, curses.KEY_RIGHT, ord("h"), ord("l")}:
-            y, x = curses.getsyx()
-            if c in {curses.KEY_LEFT, ord("h")}:
-                if x - 1 < 0:
-                    return pad_pos
-                else:
-                    curses.setsyx(y, x - 1)
-            elif c in {curses.KEY_RIGHT, ord("l")}:
-                if x + 1 > curses.COLS - 1:
-                    return pad_pos
-                else:
-                    curses.setsyx(y, x + 1)
         return pad_pos
 
     def url_popup(url):
