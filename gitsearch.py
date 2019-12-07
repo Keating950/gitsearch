@@ -12,7 +12,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--query", metavar="query string", type=str, nargs=1,
                         help="A quoted query string")
     parser.add_argument("--sort", metavar="sort by", type=str, nargs=1,
-                        help="sort by stars, forks, help-wanted-issues, or updated."
+                        help="sort by stars, forks, help-wanted-issues, "
+                             "or updated."
                              "Default is best match.")
     parser.add_argument("--order", metavar="order", type=str, nargs=1,
                         help="asc or desc. Default is descending")
@@ -27,17 +28,23 @@ def parse_args() -> argparse.Namespace:
 def gen_entry_objects(results: list) -> list:
     entries = []
     for repo in results:
-        entry = Entry(repo['name'], repo['owner']['login'], int(repo['stargazers_count']),
-                      repo['html_url'], repo.get('language'), repo.get('description'),
+        entry = Entry(repo['name'], repo['owner']['login'],
+                      int(repo['stargazers_count']),
+                      repo['html_url'], repo.get('language'),
+                      repo.get('description'),
                       )
         entries.append(entry)
     return entries
 
 
-def init_pad(contents):
-    # each entry's length + space for a newline + 1 to account for zero-indexing
-    sumlines = sum([entry.numlines for entry in contents]) + len(contents) + 1
-    pad = curses.newpad(sumlines, curses.COLS)
+def init_pad(contents: list):
+    """
+    # :param contents: list of entry objects
+    """
+    # each entry's length + space for a newline + 1 to account for
+    # zero-indexing
+    numlines = sum([entry.numlines for entry in contents]) + len(contents) + 1
+    pad = curses.newpad(numlines, curses.COLS)
     line_position = 0
     for entry in contents:
         entry.print_lines(pad, line_position)
@@ -51,7 +58,7 @@ def input_stream(pad, pad_max_y: int):
     pad_pos = 0
     stdscr.refresh()
 
-    def mv_cursor_and_scroll(pad_pos, c):
+    def mv_cursor_and_scroll(pad_pos: int, c: int):
         # scroll
         if c == curses.KEY_DOWN:
             return pad_pos + 1
@@ -86,32 +93,41 @@ def input_stream(pad, pad_max_y: int):
 
         return pad_pos
 
-    def url_popup(url):
-        if re.match(url,
-                    "https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,"
-                    "6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"):
-            textpad.rectangle(stdscr, (uly := curses.LINES // 8),
-                              (ulx := curses.COLS // 8),
-                              uly * 2, ulx * 2)
+    def url_popup(url: bytes or str):
 
-        return
+        if not re.match(
+                r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
+                r"a-zA-Z0-9("
+                r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
+                url.decode("utf-8")):
+            return
+
+        input_window = curses.newwin(curses.LINES // 2, curses.COLS // 2,
+                                     curses.LINES // 4, curses.COLS // 4)
+        textpad.rectangle(stdscr, curses.LINES // 4, curses.COLS // 4,
+                          int(curses.LINES * 0.75) + 1,
+                          int(curses.COLS * 0.75) + 1)
+        stdscr.refresh()
+        box = textpad.Textbox(input_window)
+        box.edit()
+        path = box.gather()
 
     while True:
         c = stdscr.getch()
-
         if c in {ord("h"), ord("j"), ord("k"), ord("l"),
-                 curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT, curses.KEY_RIGHT}:
+                 curses.KEY_UP, curses.KEY_DOWN, curses.KEY_LEFT,
+                 curses.KEY_RIGHT}:
             pad_pos = mv_cursor_and_scroll(pad_pos, c)
             if pad_pos < pad_max_y - curses.LINES:
-                pad.refresh(pad_pos, 0, 0, 0, curses.LINES - 1, curses.COLS - 1)
+                pad.refresh(pad_pos, 0, 0, 0, curses.LINES - 1,
+                            curses.COLS - 1)
             else:
                 pad_pos = (pad_max_y - curses.LINES) - 1
             continue
-
-        elif c == curses.KEY_ENTER:
-            y, x = curses.getsyx()
-            url = pad.instr(y, 0)
-            url_popup(url)
+        elif c in {10, curses.KEY_ENTER}:
+            y, _ = curses.getsyx()
+            repo_url = pad.instr(y, 0)
+            url_popup(repo_url)
             stdscr.refresh()
 
 
@@ -126,7 +142,8 @@ def main(stdscr):
 
     results_pad = init_pad(entry_list)
     results_pad.refresh(0, 0, 0, 0, curses.LINES - 1, curses.COLS - 1)
-    pad_max_y = sum([entry.numlines for entry in entry_list]) + len(entry_list) + 1
+    pad_max_y = sum([entry.numlines for entry in entry_list]) + len(
+        entry_list) + 1
 
     try:
         input_stream(results_pad, pad_max_y)
