@@ -94,23 +94,31 @@ def input_stream(pad, pad_max_y: int):
         return pad_pos
 
     def url_popup(url: bytes or str):
-
         if not re.match(
                 r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
                 r"a-zA-Z0-9("
                 r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
                 url.decode("utf-8")):
             return
-
-        input_window = curses.newwin(curses.LINES // 2, curses.COLS // 2,
-                                     curses.LINES // 4, curses.COLS // 4)
-        textpad.rectangle(stdscr, curses.LINES // 4, curses.COLS // 4,
-                          int(curses.LINES * 0.75) + 1,
-                          int(curses.COLS * 0.75) + 1)
+        quarter_lines = curses.LINES // 4
+        quarter_cols = curses.COLS // 4
+        half_lines = curses.LINES // 2
+        half_cols = curses.COLS // 2
+        input_window = curses.newwin(half_lines, half_cols,
+                                     quarter_lines, quarter_cols)
+        textpad.rectangle(stdscr, quarter_lines-1, quarter_cols-1,
+                          int(half_lines * 1.5) + 1,
+                          int(half_cols * 1.5) + 1)
+        # centering text by taking half_cols - (len_of_phrase/2)
+        input_window.addstr(quarter_lines-1, half_cols//2-10,
+                            "Enter path to clone:")
+        input_window.addstr(quarter_lines+2,
+                            f"{' '*(half_lines-1)}", curses.A_UNDERLINE)
+        curses.setsyx(quarter_lines+2, half_lines+1)
         stdscr.refresh()
         box = textpad.Textbox(input_window)
         box.edit()
-        path = box.gather()
+        return box.gather()
 
     while True:
         c = stdscr.getch()
@@ -128,6 +136,7 @@ def input_stream(pad, pad_max_y: int):
             y, _ = curses.getsyx()
             repo_url = pad.instr(y, 0)
             url_popup(repo_url)
+
             stdscr.refresh()
 
 
