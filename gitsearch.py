@@ -62,20 +62,22 @@ def clone_popup(url: bytes or str):
             url.decode("utf-8")):
         return
 
-    popup_win = curses.newwin(1, curses.COLS // 2,
+    popup = curses.newwin(5, curses.COLS // 2,
                               curses.LINES // 2 - 1, curses.COLS // 4)
-    input_win_uly, input_win_ulx = popup_win.getbegyx()
-    input_win_height, input_win_len = popup_win.getmaxyx()
+    popup_uly, popup_ulx = popup.getbegyx()
+    popup_height, popup_len = popup.getmaxyx()
 
     # centering text by taking half_cols - (len_of_phrase/2)
-    stdscr.addstr(input_win_uly - 2, curses.COLS // 2 - 15,
+    popup.addstr(2, popup_len // 2 - 15,
                   "Enter path to put cloned repo:")
 
-    textpad.rectangle(stdscr, input_win_uly - 1, input_win_ulx - 1,
-                      (input_win_uly + input_win_height) + 1,
-                      (input_win_ulx + input_win_len) + 1)
+    textpad.rectangle(stdscr, popup_uly - 1, popup_ulx - 1,
+                      (popup_uly + popup_height) + 1,
+                      (popup_ulx + popup_len) + 1)
 
-    box = textpad.Textbox(popup_win)
+    
+    field = popup.derwin(2, 2)
+    box = textpad.Textbox(field)
     stdscr.refresh()
     box.edit()
     return box.gather()
