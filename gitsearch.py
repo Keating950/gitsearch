@@ -63,9 +63,11 @@ def clone_popup(url: bytes or str):
                               popup_ulx:= curses.COLS // 4)
 
         # centering text by taking half_cols - (len_of_phrase/2)
-        popup.addstr(1, popup_len//2-15,
+        popup.addstr(0, popup_len//2-15,
                       "Enter path to put cloned repo:",
                       )
+
+
 
         box = textpad.Textbox(popup)
         return box
