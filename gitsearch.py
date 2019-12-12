@@ -55,32 +55,39 @@ def init_pad(contents: list):
 
 
 def clone_popup(url: bytes or str):
+
+    def draw_window() -> textpad.Texbox:
+        popup_win = curses.newwin(2, curses.COLS // 2,
+                                  curses.LINES // 2 - 1, curses.COLS // 4)
+        input_win_uly, input_win_ulx = popup_win.getbegyx()
+        input_win_height, input_win_len = popup_win.getmaxyx()
+
+        centering text by taking half_cols - (len_of_phrase/2)
+        stdscr.addstr(input_win_uly - 2, curses.COLS // 2 - 15,
+                      "Enter path to put cloned repo:")
+
+        textpad.rectangle(stdscr, input_win_uly - 1, input_win_ulx - 1,
+                          (input_win_uly + input_win_height) + 1,
+                          (input_win_ulx + input_win_len) + 1)
+
+        box = textpad.Textbox(popup_win)
+        return box
+
+    def enter_is_terminate(x: int):
+        if x == 10:
+            return 7
+        return x
+
+    def edit(tbox: textpad.Texbox) -> str:
+        tbox.edit(enter_is_terminate)
+        return tbox.gather()
+
     if not re.match(
             r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
             r"a-zA-Z0-9("
             r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
             url.decode("utf-8")):
         return
-
-    popup = curses.newwin(5, curses.COLS // 2,
-                              curses.LINES // 2 - 1, curses.COLS // 4)
-    popup_uly, popup_ulx = popup.getbegyx()
-    popup_height, popup_len = popup.getmaxyx()
-
-    # centering text by taking half_cols - (len_of_phrase/2)
-    popup.addstr(2, popup_len // 2 - 15,
-                  "Enter path to put cloned repo:")
-
-    textpad.rectangle(stdscr, popup_uly - 1, popup_ulx - 1,
-                      (popup_uly + popup_height) + 1,
-                      (popup_ulx + popup_len) + 1)
-
-    
-    field = popup.derwin(2, 2)
-    box = textpad.Textbox(field)
-    stdscr.refresh()
-    box.edit()
-    return box.gather()
 
 
 def input_stream(pad, pad_max_y: int):
