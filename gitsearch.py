@@ -57,27 +57,31 @@ def init_pad(contents: list):
 def clone_popup(url: bytes or str):
 
     def draw_window() -> textpad.Textbox:
-        popup = stdscr.subwin(popup_height:=4, 
+        popup = curses.newwin(popup_height:=4,
                               popup_len:= curses.COLS // 2,
                               popup_uly:= curses.LINES // 2, 
                               popup_ulx:= curses.COLS // 4)
 
         # centering text by taking half_cols - (len_of_phrase/2)
-        popup.addstr(0, popup_len//2-15,
+        popup.addstr(1, popup_len//2-15,
                       "Enter path to put cloned repo:",
                       )
+        popup.border()
+        popup.refresh()
+        field = curses.newwin(1,
+                             popup_len-2,
+                             popup_uly+2,
+                             popup_ulx+1,
+                            )
 
-
-
-        box = textpad.Textbox(popup)
-        return box
+        return textpad.Textbox(field)
 
     def enter_is_terminate(x: int):
         if x == 10:
             return 7
         return x
 
-    def edit(tbox: textpad.Textbox) -> str:
+    def enter_path(tbox: textpad.Textbox) -> str:
         tbox.edit(enter_is_terminate)
         return tbox.gather()
 
@@ -88,7 +92,7 @@ def clone_popup(url: bytes or str):
             url.decode("utf-8")):
         return
     textbox = draw_window()
-    path = edit(textbox)
+    path = enter_path(textbox)
     return path
 
 
