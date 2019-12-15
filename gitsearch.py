@@ -1,10 +1,10 @@
-from entry import Entry
-import ResultFetcher
 import argparse
+from curses import textpad
 import sys
 import curses
-from curses import textpad
 import re
+from entry import Entry
+import ResultFetcher
 
 
 def parse_args() -> argparse.Namespace:
@@ -54,27 +54,7 @@ def init_pad(contents: list):
     return pad
 
 
-def clone_popup(url: bytes or str):
-
-    def draw_window() -> textpad.Textbox:
-        popup = curses.newwin(popup_height:=4,
-                              popup_len:= curses.COLS // 2,
-                              popup_uly:= curses.LINES // 2, 
-                              popup_ulx:= curses.COLS // 4)
-
-        # centering text by taking half_cols - (len_of_phrase/2)
-        popup.addstr(1, popup_len//2-15,
-                      "Enter path to put cloned repo:",
-                      )
-        popup.border()
-        popup.refresh()
-        field = curses.newwin(1,
-                             popup_len-2,
-                             popup_uly+2,
-                             popup_ulx+1,
-                            )
-
-        return textpad.Textbox(field)
+def clone_popup():
 
     def enter_is_terminate(x: int):
         if x == 10:
@@ -85,15 +65,39 @@ def clone_popup(url: bytes or str):
         tbox.edit(enter_is_terminate)
         return tbox.gather()
 
-    if not re.match(
+    popup = curses.newwin(popup_height := 4,
+                            popup_len := curses.COLS // 2,
+                            popup_uly := curses.LINES // 2,
+                            popup_ulx := curses.COLS // 4)
+
+    # centering text by taking half_cols - (len_of_phrase/2)
+    popup.addstr(1, popup_len // 2 - 15,
+                    "Enter path to put cloned repo:",
+                    )
+    popup.border()
+    popup.refresh()
+    field = curses.newwin(1,
+                            popup_len - 2,
+                            popup_uly + 2,
+                            popup_ulx + 1,
+                            )
+
+    textbox = textpad.Textbox(field)
+    path = enter_path(textbox)
+    del textbox
+    del field
+    del popup
+    return path
+
+
+def validate_url(url: bytes) -> bool:
+    if re.match(
             r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
             r"a-zA-Z0-9("
             r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
             url.decode("utf-8")):
-        return
-    textbox = draw_window()
-    path = enter_path(textbox)
-    return path
+        return True
+    return False
 
 
 def input_stream(pad, pad_max_y: int):
@@ -106,7 +110,6 @@ def input_stream(pad, pad_max_y: int):
             return pad_pos + 1
         elif c == curses.KEY_UP:
             return pad_pos - 1
-
         # cursor movement and, if in first or last line, scroll
         y, x = curses.getsyx()
         if c == ord("j"):
@@ -132,7 +135,6 @@ def input_stream(pad, pad_max_y: int):
                 return pad_pos
             else:
                 curses.setsyx(y, x + 1)
-
         return pad_pos
 
     while True:
@@ -150,8 +152,10 @@ def input_stream(pad, pad_max_y: int):
         elif c in {10, curses.KEY_ENTER}:
             y, _ = curses.getsyx()
             repo_url = pad.instr(y, 0)
-            clone_popup(repo_url)
-
+            if validate_url(repo_url):
+                clone_popup()
+                stdscr.touchwin()
+                pad.touchwin()
             stdscr.refresh()
 
 
