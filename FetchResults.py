@@ -1,3 +1,4 @@
+from Entry import Entry
 import argparse
 import requests as r
 
@@ -32,7 +33,19 @@ def send_request(args: argparse.Namespace) -> list:
     return resp.json()["items"]
 
 
-def fetch_results(args: argparse.Namespace) -> list:
+def fetch(args: argparse.Namespace) -> list:
     format_query(args)
     results = send_request(args)
     return results
+
+
+def gen_entries(results: list) -> list:
+    entries = []
+    for repo in results:
+        entry = Entry(repo['name'], repo['owner']['login'],
+                      int(repo['stargazers_count']),
+                      repo['html_url'], repo.get('language'),
+                      repo.get('description'),
+                      )
+        entries.append(entry)
+    return entries
