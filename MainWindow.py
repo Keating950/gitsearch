@@ -11,9 +11,40 @@ class MainWindow:
 
     def __init__(self, stdscr: curses.window):
         self.stdscr = stdscr
-        self.entrypages = None
+        self.entry_pages = None
 
-    def input_stream(self, entry_pages: EntryPages):
+    def draw_textbox(self, url: bytes or str):
+
+        def validator()
+
+            if not re.match(
+                    r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
+                    r"a-zA-Z0-9("
+                    r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
+                    url.decode("utf-8")):
+                return
+            quarter_lines = curses.LINES // 4
+            quarter_cols = curses.COLS // 4
+            half_lines = curses.LINES // 2
+            half_cols = curses.COLS // 2
+            input_window = curses.newwin(half_lines, half_cols, quarter_lines,
+                                         quarter_cols)
+            textpad.rectangle(self.stdscr, quarter_lines - 1, quarter_cols - 1,
+                              int(half_lines * 1.5) + 1,
+                              int(half_cols * 1.5) + 1)
+            # centering text by taking half_cols - (len_of_phrase/2)
+            input_window.addstr(quarter_lines - 1, half_cols // 2 - 10,
+                                "Enter path to clone:\n")
+            # input_window.addstr(quarter_lines + 2,
+            #                     f"{' ' * (half_lines - 1)}", curses.A_UNDERLINE)
+            input_window.move(quarter_lines + 2, half_lines + 1)
+            self.stdscr.refresh()
+            input_window.refresh()
+            box = textpad.Textbox(input_window)
+            box.edit()
+            return box.gather()
+
+    def input_stream(self):
         idx = 0
         while True:
             y, x = curses.getsyx()
@@ -31,11 +62,16 @@ class MainWindow:
                 if x + 1 < curses.COLS:
                     self.stdscr.move(y, x + 1)
             elif c == "\t":
-                entry_pages.turn_page(self.stdscr, 1)
+                self.entry_pages.turn_page(self.stdscr, 1)
                 self.stdscr.move(y, x)
             elif c == "KEY_BTAB":
-                entry_pages.turn_page(self.stdscr, -1)
+                self.entry_pages.turn_page(self.stdscr, -1)
                 self.stdscr.move(y, x)
+            elif c == "\n":
+                # self.stdscr.nodelay(1)
+                foo = self.stdscr.instr(y, 0)
+                # self.stdscr.nodelay(0)
+                self.draw_textbox(foo)
 
             self.stdscr.refresh()
 
@@ -50,7 +86,7 @@ class MainWindow:
         self.stdscr.move(0, 0)
 
         try:
-            self.input_stream(self.entrypages)
+            self.input_stream()
         except KeyboardInterrupt:
             pass
         finally:
