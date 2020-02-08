@@ -49,14 +49,26 @@ class MainWindow:
         textpad.rectangle(popup_window, 0, 0,
                           popup_window.getmaxyx()[0] - 2,
                           popup_window.getmaxyx()[1] - 2)
-        # centering text by taking half_cols - (len_of_phrase/2)
-        popup_window.addstr(self.QUARTER_LINES - 1, self.HALF_COLS // 2 - 10,
+        # centering text by taking half_cols - (length of phrase) // 2
+        popup_window.addstr(self.QUARTER_LINES - 2, self.HALF_COLS // 2 - 10,
                             "Enter path to clone:\n")
-        # popup_window.move(self.QUARTER_LINES + 2, self.HALF_LINES + 1)
-        box = textpad.Textbox(popup_window)
+
+        input_window = curses.newwin(1, self.HALF_COLS - 2,
+                                     # just over halfway down popup_window
+                                     self.QUARTER_LINES + self.HALF_LINES // 2,
+                                     self.QUARTER_COLS + 2)
+
+        box = textpad.Textbox(input_window)
         popup_window.refresh()
+        input_window.refresh()
         box.edit(validator)
-        return box.gather()
+        path = box.gather()
+
+        del box
+        del input_window
+        del popup_window
+        self.stdscr.touchwin()
+        return path
 
     def input_stream(self):
         while True:
