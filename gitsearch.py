@@ -32,5 +32,17 @@ if __name__ == "__main__":
     curses.noecho()
     curses.cbreak()
     stdscr.keypad(True)
-    main_window = MainWindow(stdscr)
-    main_window.main(parse_args())
+    formatted_args = parse_args()
+    entries = FetchResults.gen_entries(
+        FetchResults.fetch(formatted_args)
+    )
+    main_window = MainWindow(stdscr,
+                             formatted_args,
+                             entries)
+
+    try:
+        main_window.input_stream()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        curses.endwin()

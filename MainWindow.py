@@ -1,7 +1,7 @@
-import FetchResults
+from typing import List
+from Entry import Entry
 from EntryPages import EntryPages
 import argparse
-import sys
 import curses
 from curses import textpad
 import re
@@ -9,16 +9,38 @@ import re
 
 class MainWindow:
 
-    def __init__(self, stdscr: curses.window):
+    def __init__(self, stdscr: curses.window, formatted_args: argparse.Namespace,
+                 entries: List[Entry]):
         self.stdscr = stdscr
         self.entry_pages = None
         self.QUARTER_LINES = curses.LINES // 4
         self.QUARTER_COLS = curses.COLS // 4
         self.HALF_LINES = curses.LINES // 2
         self.HALF_COLS = curses.COLS // 2
+        self.entry_pages = EntryPages(entries, curses.LINES)
+        self.entry_pages.draw_page(self.stdscr)
+        self.stdscr.refresh()
+        self.stdscr.move(0, 0)
 
-    def draw_textbox(self, url: bytes or str):
-        def validator(key):
+    def draw_path_error_window(self, input_path: str,
+                               frontmost_window: curses.window) -> None:
+        err_win = curses.newwin(self.HALF_LINES,
+                                self.HALF_COLS,
+                                self.QUARTER_LINES,
+                                self.QUARTER_COLS)
+        err_win.box()
+        err_win.overlay(frontmost_window)
+        err_win.addnstr(self.QUARTER_LINES - 2,
+                        self.HALF_COLS // 2 - ((len(input_path) + 36) // 2),
+                        f"{input_path} is not a valid path to a directory.",
+                        self.HALF_COLS - 2)
+        err_win.refresh()
+        err_win.getkey()
+        del err_win
+        frontmost_window.touchwin()
+
+    def draw_textbox(self, url: bytes or str) -> str or None:
+        def key_validator(key: int) -> int or None:
             # enter/return
             if key == 10:
                 return 7
@@ -31,7 +53,7 @@ class MainWindow:
         if not re.match(
                 r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
                 r"a-zA-Z0-9("
-                r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)",
+                r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)",
                 url.decode("utf-8")):
             return
 
@@ -40,15 +62,11 @@ class MainWindow:
         # input_window: single-line window. Kept empty other than textbox to keep
         #   gather() results clean.
         # box: Textbox object for actual editing.
-
         popup_window = curses.newwin(self.HALF_LINES, self.HALF_COLS,
                                      self.QUARTER_LINES,
                                      self.QUARTER_COLS)
+        popup_window.box()
         popup_window.overlay(self.stdscr)
-        # unclear why i can only write to max_x-2 without err
-        textpad.rectangle(popup_window, 0, 0,
-                          popup_window.getmaxyx()[0] - 2,
-                          popup_window.getmaxyx()[1] - 2)
         # centering text by taking half_cols - (length of phrase) // 2
         popup_window.addstr(self.QUARTER_LINES - 2, self.HALF_COLS // 2 - 10,
                             "Enter path to clone:\n")
@@ -59,18 +77,18 @@ class MainWindow:
                                      self.QUARTER_COLS + 2)
 
         box = textpad.Textbox(input_window)
+
         popup_window.refresh()
         input_window.refresh()
-        box.edit(validator)
+        box.edit(key_validator)
         path = box.gather()
-
         del box
         del input_window
         del popup_window
         self.stdscr.touchwin()
         return path
 
-    def input_stream(self):
+    def input_stream(self) -> None:
         while True:
             y, x = self.stdscr.getyx()
             c = self.stdscr.getkey()
@@ -93,24 +111,7 @@ class MainWindow:
                 self.entry_pages.turn_page(self.stdscr, -1)
                 self.stdscr.move(y, x)
             elif c == "\n":
-                repo_url = self.stdscr.instr(y, 0)
+                repo_url = self.stdscr.instr(y, 0).strip()
                 path = self.draw_textbox(repo_url)
 
             self.stdscr.refresh()
-
-    def main(self, formatted_args: argparse.Namespace):
-        arg_str = ""
-        for i in sys.argv:
-            arg_str += str(i)
-        entries = FetchResults.gen_entries(FetchResults.fetch(formatted_args))
-        self.entry_pages = EntryPages(entries, curses.LINES)
-        self.entry_pages.draw_page(self.stdscr)
-        self.stdscr.refresh()
-        self.stdscr.move(0, 0)
-
-        try:
-            self.input_stream()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            curses.endwin()
