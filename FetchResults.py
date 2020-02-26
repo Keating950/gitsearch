@@ -1,6 +1,8 @@
 from Entry import Entry
 import argparse
 import requests as r
+import os
+import subprocess
 
 
 def format_query(args: argparse.Namespace):
@@ -49,3 +51,17 @@ def gen_entries(results: list) -> list:
                       )
         entries.append(entry)
     return entries
+
+
+def clone_repo(path: str, url: str) -> None:
+    og_cwd = os.getcwd()
+    try:
+        os.chdir(path)
+        subprocess.check_call(["git", "clone", url],
+                              stderr=subprocess.DEVNULL,
+                              stdout=subprocess.DEVNULL
+                              )
+    except Exception as e:
+        curses.endwin()
+        raise e
+    os.chdir(og_cwd)

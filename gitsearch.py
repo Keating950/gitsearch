@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-from MainWindow import MainWindow
-import FetchResults
 import argparse
 import curses
 import os
 import subprocess
 from typing import Union
+import FetchResults
+from MainWindow import MainWindow
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,20 +35,6 @@ def format_validate_path(path: str) -> Union[Exception, str]:
     return abs_path
 
 
-def clone_repo(path: str, url: str) -> None:
-    og_cwd = os.getcwd()
-    try:
-        os.chdir(path)
-        subprocess.check_call(["git", "clone", url],
-                              stderr=subprocess.DEVNULL,
-                              stdout=subprocess.DEVNULL
-                              )
-    except Exception as e:
-        curses.endwin()
-        raise e
-    os.chdir(og_cwd)
-
-
 if __name__ == "__main__":
     formatted_args = parse_args()
     stdscr = curses.initscr()
@@ -70,7 +56,7 @@ if __name__ == "__main__":
             except FileNotFoundError:
                 main_window.draw_path_error_window(path)
                 continue
-            clone_repo(path_f, url)
+            FetchResults.clone_repo(path_f, url)
             main_window.clear_popup_win(url.split("/")[-1], path_f)
     except KeyboardInterrupt:
         pass

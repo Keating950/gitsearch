@@ -1,6 +1,6 @@
-from Entry import Entry
-from typing import List
 import curses
+from typing import List
+from Entry import Entry
 
 
 class EntryPages:
