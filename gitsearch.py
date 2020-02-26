@@ -9,18 +9,39 @@ from MainWindow import MainWindow
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="A command line program to search for"
-                                                 "and clone repos from GitHub.")
-    parser.add_argument("--query", metavar="query string", type=str, nargs=1,
-                        help="A quoted query string", required=True)
-    parser.add_argument("--sort", metavar="sort by", type=str, nargs=1,
-                        help="sort by stars, forks, help-wanted-issues, "
-                             "or updated."
-                             "Default is best match.")
-    parser.add_argument("--order", metavar="order", type=str, nargs=1,
-                        help="asc or desc. Default is descending")
-    parser.add_argument("--lang", metavar="lang", type=str, nargs=1,
-                        help="Restrict results by language.")
+    parser = argparse.ArgumentParser(description=
+                                     """A simple command line utility for\
+                                         searching for and cloning repos from\
+                                         Github.\nMove the cursor with Vim-style hjkl\
+                                         inputs. Flip pages with Tab and Shift+Tab."""
+                                     )
+    parser.add_argument("query",
+                        metavar="\"query\"",
+                        type=str,
+                        nargs=1,
+                        help="A quoted query string.",
+                        )
+    parser.add_argument("--sort",
+                        metavar="statistic",
+                        type=str,
+                        nargs=1,
+                        choices=("stars", "forks", "help-wanted-issues", "updated"),
+                        help="Sort by stars, forks, help-wanted-issues, or updated."
+                             " Default is best match."
+                        )
+    parser.add_argument("--order",
+                        metavar="asc, desc",
+                        type=str,
+                        nargs=1,
+                        choices=("asc", "desc"),
+                        help="asc or desc. Default is descending."
+                        )
+    parser.add_argument("--lang",
+                        metavar="lang",
+                        type=str,
+                        nargs=1,
+                        help="Restrict results by programming language."
+                        )
     arg_namespace = parser.parse_args()
     # splitting multi-word double-quoted query arguments for proper url formatting
     arg_namespace.query = str(arg_namespace.query[0]).split()
