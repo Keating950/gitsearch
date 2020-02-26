@@ -121,12 +121,9 @@ class MainWindow:
         del err_win
         self.redraw_results()
 
-    def move_highlight(self, window: curses.window, down: bool) -> None:
+    def move_highlight(self, window: curses.window, prev_line_relative: int) -> None:
         y, _ = window.getyx()
-        if down:
-            window.chgat(y - 1, 0, curses.A_NORMAL)
-        else:
-            window.chgat(y + 1, 0, curses.A_NORMAL)
+        window.chgat(y + prev_line_relative, 0, curses.A_NORMAL)
         window.chgat(y, 0, curses.A_STANDOUT)
 
     def input_stream(self) -> Tuple[str, str]:
@@ -138,17 +135,19 @@ class MainWindow:
             if c == "j":
                 if y + 1 < curses.LINES:
                     self.stdscr.move(y + 1, 0)
-                    self.move_highlight(self.stdscr, down=True)
+                    self.move_highlight(self.stdscr, -1)
             elif c == "k":
                 if y - 1 >= 0:
                     self.stdscr.move(y - 1, 0)
-                    self.move_highlight(self.stdscr, down=False)
+                    self.move_highlight(self.stdscr, 1)
             elif c == "\t":
                 self.entry_pages.turn_page(self.stdscr, 1)
                 self.stdscr.move(y, 0)
+                self.move_highlight(self.stdscr, 0)
             elif c == "KEY_BTAB":
                 self.entry_pages.turn_page(self.stdscr, -1)
                 self.stdscr.move(y, 0)
+                self.move_highlight(self.stdscr, 0)
             elif c == "\n":
                 repo_url = self.stdscr.instr(y, 0).strip().decode("utf-8")
                 if self.is_url(repo_url):

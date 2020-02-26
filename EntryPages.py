@@ -30,6 +30,7 @@ class EntryPages:
     def turn_page(self, screen: curses.window, direction: int):
         page = self.current_page + direction
         pos = 0
+        screen.erase()
         if page <= len(self._pages):
             for entry in self._pages[page]:
                 entry.draw(screen, pos)
