@@ -3,7 +3,6 @@
 import argparse
 import curses
 import os
-import subprocess
 from typing import Union
 import FetchResults
 from MainWindow import MainWindow

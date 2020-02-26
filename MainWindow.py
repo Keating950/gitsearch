@@ -1,11 +1,11 @@
+import argparse
+import curses
+import re
+from collections import deque
+from curses import textpad
 from typing import List, Tuple
 from Entry import Entry
 from EntryPages import EntryPages
-from collections import deque
-import argparse
-import curses
-from curses import textpad
-import re
 
 
 class MainWindow:
