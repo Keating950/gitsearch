@@ -1,4 +1,3 @@
-import argparse
 import curses
 import re
 from collections import deque
@@ -9,9 +8,7 @@ from EntryPages import EntryPages
 
 
 class MainWindow:
-
-    def __init__(self, stdscr: curses.window, formatted_args: argparse.Namespace,
-                 entries: List[Entry]):
+    def __init__(self, stdscr: curses.window, entries: List[Entry]):
         self.stdscr = stdscr
         self.entry_pages = None
         self.QUARTER_LINES = curses.LINES // 4
@@ -30,10 +27,11 @@ class MainWindow:
                 r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
                 r"a-zA-Z0-9("
                 r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)",
-                text)
+                text,
+            )
         )
 
-    def redraw_results(self):
+    def redraw_results(self) -> None:
         self.stdscr.erase()
         self.entry_pages.draw_page(self.stdscr)
         self.stdscr.refresh()
@@ -53,20 +51,24 @@ class MainWindow:
         # input_window: single-line window. Kept empty other than textbox to keep
         #   gather() results clean.
         # box: Textbox object for actual editing.
-        popup_window = curses.newwin(self.HALF_LINES, self.HALF_COLS,
-                                     self.QUARTER_LINES,
-                                     self.QUARTER_COLS)
+        popup_window = curses.newwin(
+            self.HALF_LINES, self.HALF_COLS, self.QUARTER_LINES, self.QUARTER_COLS
+        )
         popup_window.box()
         popup_window.overlay(self.stdscr)
         # centering text by taking half_cols - ((length of phrase) // 2)
-        popup_window.addstr(self.QUARTER_LINES - 2,
-                            self.HALF_COLS // 2 - 14,
-                            "Enter destination directory:"
-                            )
-        input_window = curses.newwin(1, self.HALF_COLS - 4,
-                                     # just over halfway down popup_window
-                                     self.QUARTER_LINES + self.HALF_LINES // 2,
-                                     self.QUARTER_COLS + 2)
+        popup_window.addstr(
+            self.QUARTER_LINES - 2,
+            self.HALF_COLS // 2 - 14,
+            "Enter destination directory:",
+        )
+        input_window = curses.newwin(
+            1,
+            self.HALF_COLS - 4,
+            # just over halfway down popup_window
+            self.QUARTER_LINES + self.HALF_LINES // 2,
+            self.QUARTER_COLS + 2,
+        )
         box = textpad.Textbox(input_window)
         popup_window.refresh()
         box.edit(key_validator)
@@ -76,22 +78,23 @@ class MainWindow:
         popup_window.erase()
         # border is erased in prev call; redrawing
         popup_window.box()
-        popup_window.addstr(self.QUARTER_LINES - 2,
-                            self.HALF_COLS // 2 - 5,
-                            "Cloning..."
-                            )
+        popup_window.addstr(
+            self.QUARTER_LINES - 2, self.HALF_COLS // 2 - 5, "Cloning..."
+        )
         popup_window.refresh()
         self.windows.append(popup_window)
         return path
 
-    def clear_popup_win(self, repo: str, destination: str):
+    def clear_popup_win(self, repo: str, destination: str) -> None:
         success_msg = f"Cloned {repo} to {destination}."
         popup_window = self.windows.pop()
         popup_window.erase()
         popup_window.box()
-        popup_window.addstr(self.QUARTER_LINES - 2,
-                            self.HALF_COLS // 2 - len(success_msg) // 2,
-                            success_msg)
+        popup_window.addstr(
+            self.QUARTER_LINES - 2,
+            self.HALF_COLS // 2 - len(success_msg) // 2,
+            success_msg,
+        )
         popup_window.refresh()
         # wait for keypress
         popup_window.getkey()
@@ -100,16 +103,17 @@ class MainWindow:
         self.redraw_results()
 
     def draw_path_error_window(self, input_path: str) -> None:
-        err_win = curses.newwin(self.HALF_LINES,
-                                self.HALF_COLS,
-                                self.QUARTER_LINES,
-                                self.QUARTER_COLS)
+        err_win = curses.newwin(
+            self.HALF_LINES, self.HALF_COLS, self.QUARTER_LINES, self.QUARTER_COLS
+        )
         err_win.overlay(self.stdscr)
         err_win.box()
-        err_win.addnstr(self.QUARTER_LINES - 2,
-                        self.HALF_COLS // 2 - ((len(input_path) + 36) // 2),
-                        f"{input_path} is not a valid path to a directory.",
-                        self.HALF_COLS - 2)
+        err_win.addnstr(
+            self.QUARTER_LINES - 2,
+            self.HALF_COLS // 2 - ((len(input_path) + 36) // 2),
+            f"{input_path} is not a valid path to a directory.",
+            self.HALF_COLS - 2,
+        )
         err_win.refresh()
         err_win.getkey()
         del err_win

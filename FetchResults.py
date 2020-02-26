@@ -26,12 +26,11 @@ def send_request(args: argparse.Namespace) -> list:
     if args.order != None:
         param_dict["order"] = args.order
 
-    resp = r.get(url="https://api.github.com/search/repositories",
-                 params=param_dict)
+    resp = r.get(url="https://api.github.com/search/repositories", params=param_dict)
     try:
         resp.raise_for_status()
     except r.HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+        print(f"HTTP error occurred: {http_err}")
     return resp.json()["items"]
 
 
@@ -44,24 +43,22 @@ def fetch(args: argparse.Namespace) -> list:
 def gen_entries(results: list) -> list:
     entries = []
     for repo in results:
-        entry = Entry(repo['name'], repo['owner']['login'],
-                      int(repo['stargazers_count']),
-                      repo['html_url'], repo.get('language'),
-                      repo.get('description'),
-                      )
+        entry = Entry(
+            repo["name"],
+            repo["owner"]["login"],
+            int(repo["stargazers_count"]),
+            repo["html_url"],
+            repo.get("language"),
+            repo.get("description"),
+        )
         entries.append(entry)
     return entries
 
 
 def clone_repo(path: str, url: str) -> None:
     og_cwd = os.getcwd()
-    try:
-        os.chdir(path)
-        subprocess.check_call(["git", "clone", url],
-                              stderr=subprocess.DEVNULL,
-                              stdout=subprocess.DEVNULL
-                              )
-    except Exception as e:
-        curses.endwin()
-        raise e
+    os.chdir(path)
+    subprocess.check_call(
+        ["git", "clone", url], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
+    )
     os.chdir(og_cwd)

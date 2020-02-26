@@ -4,7 +4,6 @@ from Entry import Entry
 
 
 class EntryPages:
-
     def __init__(self, entries: List[Entry], line_limit: int):
         self._pages = []
         self.current_page = 0

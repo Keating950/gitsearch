@@ -2,9 +2,15 @@ import curses
 
 
 class Entry:
-
-    def __init__(self, name: str, author: str, stars: int, url: str, lang: str = None,
-                 description: str = None):
+    def __init__(
+        self,
+        name: str,
+        author: str,
+        stars: int,
+        url: str,
+        lang: str = None,
+        description: str = None,
+    ):
         self.line0 = f"{name}\t{author}\t{lang if lang is not None else ''}\t{stars}"
         self.line1 = description
         self.line2 = url
