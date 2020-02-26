@@ -1,6 +1,7 @@
 from typing import List, Union, Tuple
 from Entry import Entry
 from EntryPages import EntryPages
+from collections import deque
 import argparse
 import curses
 from curses import textpad
@@ -21,21 +22,7 @@ class MainWindow:
         self.entry_pages.draw_page(self.stdscr)
         self.stdscr.refresh()
         self.stdscr.move(0, 0)
-
-    def draw_path_error_window(self, input_path: str) -> None:
-        err_win = curses.newwin(self.HALF_LINES,
-                                self.HALF_COLS,
-                                self.QUARTER_LINES,
-                                self.QUARTER_COLS)
-        err_win.overlay(self.stdscr)
-        err_win.box()
-        err_win.addnstr(self.QUARTER_LINES - 2,
-                        self.HALF_COLS // 2 - ((len(input_path) + 36) // 2),
-                        f"{input_path} is not a valid path to a directory.",
-                        self.HALF_COLS - 2)
-        err_win.refresh()
-        err_win.getkey()
-        del err_win
+        self.windows = deque()
 
     def is_url(self, text: str) -> bool:
         return bool(
@@ -45,6 +32,11 @@ class MainWindow:
                 r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)",
                 text)
         )
+
+    def redraw_results(self):
+        self.stdscr.erase()
+        self.entry_pages.draw_page(self.stdscr)
+        self.stdscr.refresh()
 
     def draw_textbox(self) -> str:
         def key_validator(key: int) -> int or None:
@@ -66,24 +58,60 @@ class MainWindow:
                                      self.QUARTER_COLS)
         popup_window.box()
         popup_window.overlay(self.stdscr)
-        # centering text by taking half_cols - (length of phrase) // 2
-        popup_window.addstr(self.QUARTER_LINES - 2, self.HALF_COLS // 2 - 10,
-                            "Enter path to clone:")
-
+        # centering text by taking half_cols - ((length of phrase) // 2)
+        popup_window.addstr(self.QUARTER_LINES - 2,
+                            self.HALF_COLS // 2 - 14,
+                            "Enter destination directory:"
+                            )
         input_window = curses.newwin(1, self.HALF_COLS - 4,
                                      # just over halfway down popup_window
                                      self.QUARTER_LINES + self.HALF_LINES // 2,
                                      self.QUARTER_COLS + 2)
         box = textpad.Textbox(input_window)
-
         popup_window.refresh()
         box.edit(key_validator)
         path = box.gather()
         del box
         del input_window
-        del popup_window
-        self.stdscr.touchwin()
+        popup_window.erase()
+        # border is erased in prev call; redrawing
+        popup_window.box()
+        popup_window.addstr(self.QUARTER_LINES - 2,
+                            self.HALF_COLS // 2 - 5,
+                            "Cloning..."
+                            )
+        popup_window.refresh()
+        self.windows.append(popup_window)
         return path
+
+    def clear_popup_win(self, repo: str, destination: str):
+        success_msg = f"Cloned {repo} to {destination}"
+        popup_window = self.windows.pop()
+        popup_window.erase()
+        # border is erased in prev call; redrawing
+        popup_window.box()
+        popup_window.addstr(self.QUARTER_LINES - 2,
+                            self.HALF_COLS // 2 - len(success_msg) // 2,
+                            )
+        popup_window.refresh()
+        # wait for keypress
+        self.stdscr.getkey()
+
+    def draw_path_error_window(self, input_path: str) -> None:
+        err_win = curses.newwin(self.HALF_LINES,
+                                self.HALF_COLS,
+                                self.QUARTER_LINES,
+                                self.QUARTER_COLS)
+        err_win.overlay(self.stdscr)
+        err_win.box()
+        err_win.addnstr(self.QUARTER_LINES - 2,
+                        self.HALF_COLS // 2 - ((len(input_path) + 36) // 2),
+                        f"{input_path} is not a valid path to a directory.",
+                        self.HALF_COLS - 2)
+        err_win.refresh()
+        err_win.getkey()
+        del err_win
+        self.redraw_results()
 
     def input_stream(self) -> Tuple[str, str]:
         while True:
@@ -111,7 +139,7 @@ class MainWindow:
                 repo_url = self.stdscr.instr(y, 0).strip().decode("utf-8")
                 if self.is_url(repo_url):
                     path = self.draw_textbox()
-                    self.stdscr.touchwin()  # TODO: why does this work?
+                    self.stdscr.touchwin()
                     return path, repo_url
 
             self.stdscr.refresh()

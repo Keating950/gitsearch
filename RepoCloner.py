@@ -11,14 +11,15 @@ def format_validate_path(path: str) -> Union[Exception, str]:
     return abs_path
 
 
-def clone_repo(path: str, url: str) -> bool:
+def clone_repo(path: str, url: str) -> None:
     og_cwd = os.getcwd()
-    DEVNULL = open(os.devnull, 'w')
     try:
         os.chdir(path)
-        subprocess.call(["git", "clone", url], stdout=DEVNULL)
+        subprocess.check_call(["git", "clone", url],
+                              stderr=subprocess.DEVNULL,
+                              stdout=subprocess.DEVNULL
+                              )
     except Exception as e:
         curses.endwin()
         raise e
     os.chdir(og_cwd)
-    return True
