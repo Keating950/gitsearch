@@ -22,7 +22,7 @@ class Entry:
 
     def draw(self, screen: curses.window, pos):
         tmp_pos = pos
-        screen.addnstr(tmp_pos, 0, self.line0, curses.COLS - 1)
+        screen.addnstr(tmp_pos, 0, self.line0, curses.COLS - 1, curses.A_BOLD)
         tmp_pos += 1
         if self.line1 is not None:
             screen.addnstr(tmp_pos, 0, self.line1, curses.COLS - 1)

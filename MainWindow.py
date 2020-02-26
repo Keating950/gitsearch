@@ -70,9 +70,11 @@ class MainWindow:
             self.QUARTER_COLS + 2,
         )
         box = textpad.Textbox(input_window)
+        curses.curs_set(1)
         popup_window.refresh()
         box.edit(key_validator)
         path = box.gather()
+        curses.curs_set(0)
         del box
         del input_window
         popup_window.erase()
@@ -119,28 +121,34 @@ class MainWindow:
         del err_win
         self.redraw_results()
 
+    def move_highlight(self, window: curses.window, down: bool) -> None:
+        y, _ = window.getyx()
+        if down:
+            window.chgat(y - 1, 0, curses.A_NORMAL)
+        else:
+            window.chgat(y + 1, 0, curses.A_NORMAL)
+        window.chgat(y, 0, curses.A_STANDOUT)
+
     def input_stream(self) -> Tuple[str, str]:
+        curses.curs_set(0)
+        self.stdscr.chgat(0, 0, curses.A_STANDOUT)
         while True:
-            y, x = self.stdscr.getyx()
+            y, _ = self.stdscr.getyx()
             c = self.stdscr.getkey()
             if c == "j":
                 if y + 1 < curses.LINES:
-                    self.stdscr.move(y + 1, x)
+                    self.stdscr.move(y + 1, 0)
+                    self.move_highlight(self.stdscr, down=True)
             elif c == "k":
                 if y - 1 >= 0:
-                    self.stdscr.move(y - 1, x)
-            elif c == "h":
-                if x - 1 >= 0:
-                    self.stdscr.move(y, x - 1)
-            elif c == "l":
-                if x + 1 <= curses.COLS:
-                    self.stdscr.move(y, x + 1)
+                    self.stdscr.move(y - 1, 0)
+                    self.move_highlight(self.stdscr, down=False)
             elif c == "\t":
                 self.entry_pages.turn_page(self.stdscr, 1)
-                self.stdscr.move(y, x)
+                self.stdscr.move(y, 0)
             elif c == "KEY_BTAB":
                 self.entry_pages.turn_page(self.stdscr, -1)
-                self.stdscr.move(y, x)
+                self.stdscr.move(y, 0)
             elif c == "\n":
                 repo_url = self.stdscr.instr(y, 0).strip().decode("utf-8")
                 if self.is_url(repo_url):
