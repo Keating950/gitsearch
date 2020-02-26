@@ -1,4 +1,4 @@
-from typing import List, Union, Tuple
+from typing import List, Tuple
 from Entry import Entry
 from EntryPages import EntryPages
 from collections import deque
@@ -85,17 +85,20 @@ class MainWindow:
         return path
 
     def clear_popup_win(self, repo: str, destination: str):
-        success_msg = f"Cloned {repo} to {destination}"
+        success_msg = f"Cloned {repo} to {destination}."
         popup_window = self.windows.pop()
         popup_window.erase()
         # border is erased in prev call; redrawing
         popup_window.box()
         popup_window.addstr(self.QUARTER_LINES - 2,
                             self.HALF_COLS // 2 - len(success_msg) // 2,
-                            )
+                            success_msg)
         popup_window.refresh()
         # wait for keypress
-        self.stdscr.getkey()
+        popup_window.getkey()
+        popup_window.erase()
+        del popup_window
+        self.redraw_results()
 
     def draw_path_error_window(self, input_path: str) -> None:
         err_win = curses.newwin(self.HALF_LINES,

@@ -47,7 +47,7 @@ if __name__ == "__main__":
                 main_window.draw_path_error_window(path)
                 continue
             RepoCloner.clone_repo(path_f, url)
-            main_window.clear_popup_win()
+            main_window.clear_popup_win(url.split("/")[-1], path_f)
     except KeyboardInterrupt:
         pass
     finally:
