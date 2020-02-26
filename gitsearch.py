@@ -1,12 +1,10 @@
+#!/usr/bin/env python3
+
 from MainWindow import MainWindow
 import FetchResults
-from Entry import Entry
-from EntryPages import EntryPages
 import argparse
-import sys
 import curses
-from curses import textpad
-import re
+import RepoCloner
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,8 +39,19 @@ if __name__ == "__main__":
                              entries)
 
     try:
-        main_window.input_stream()
+        while True:
+            path, url = main_window.input_stream()
+            try:
+                path_f = RepoCloner.format_validate_path(path)
+            except FileNotFoundError:
+                # breakpoint()
+                main_window.draw_path_error_window(path)
+                continue
+            RepoCloner.clone_repo(path_f, url)
+
     except KeyboardInterrupt:
         pass
+    # except Exception:
+    #     pass
     finally:
         curses.endwin()

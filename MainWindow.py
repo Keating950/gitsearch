@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union, Tuple
 from Entry import Entry
 from EntryPages import EntryPages
 import argparse
@@ -22,14 +22,13 @@ class MainWindow:
         self.stdscr.refresh()
         self.stdscr.move(0, 0)
 
-    def draw_path_error_window(self, input_path: str,
-                               frontmost_window: curses.window) -> None:
+    def draw_path_error_window(self, input_path: str) -> None:
         err_win = curses.newwin(self.HALF_LINES,
                                 self.HALF_COLS,
                                 self.QUARTER_LINES,
                                 self.QUARTER_COLS)
+        err_win.overlay(self.stdscr)
         err_win.box()
-        err_win.overlay(frontmost_window)
         err_win.addnstr(self.QUARTER_LINES - 2,
                         self.HALF_COLS // 2 - ((len(input_path) + 36) // 2),
                         f"{input_path} is not a valid path to a directory.",
@@ -37,9 +36,17 @@ class MainWindow:
         err_win.refresh()
         err_win.getkey()
         del err_win
-        frontmost_window.touchwin()
 
-    def draw_textbox(self, url: bytes or str) -> str or None:
+    def is_url(self, text: str) -> bool:
+        return bool(
+            re.match(
+                r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
+                r"a-zA-Z0-9("
+                r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)",
+                text)
+        )
+
+    def draw_textbox(self) -> str:
         def key_validator(key: int) -> int or None:
             # enter/return
             if key == 10:
@@ -48,14 +55,6 @@ class MainWindow:
                 box.do_command(curses.KEY_BACKSPACE)
                 return
             return key
-
-        # url matching regex
-        if not re.match(
-                r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
-                r"a-zA-Z0-9("
-                r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)",
-                url.decode("utf-8")):
-            return
 
         # Hierarchy:
         # popup_window: Visual container for prompt. Includes border.
@@ -69,17 +68,15 @@ class MainWindow:
         popup_window.overlay(self.stdscr)
         # centering text by taking half_cols - (length of phrase) // 2
         popup_window.addstr(self.QUARTER_LINES - 2, self.HALF_COLS // 2 - 10,
-                            "Enter path to clone:\n")
+                            "Enter path to clone:")
 
-        input_window = curses.newwin(1, self.HALF_COLS - 2,
+        input_window = curses.newwin(1, self.HALF_COLS - 4,
                                      # just over halfway down popup_window
                                      self.QUARTER_LINES + self.HALF_LINES // 2,
                                      self.QUARTER_COLS + 2)
-
         box = textpad.Textbox(input_window)
 
         popup_window.refresh()
-        input_window.refresh()
         box.edit(key_validator)
         path = box.gather()
         del box
@@ -88,7 +85,7 @@ class MainWindow:
         self.stdscr.touchwin()
         return path
 
-    def input_stream(self) -> None:
+    def input_stream(self) -> Tuple[str, str]:
         while True:
             y, x = self.stdscr.getyx()
             c = self.stdscr.getkey()
@@ -111,7 +108,10 @@ class MainWindow:
                 self.entry_pages.turn_page(self.stdscr, -1)
                 self.stdscr.move(y, x)
             elif c == "\n":
-                repo_url = self.stdscr.instr(y, 0).strip()
-                path = self.draw_textbox(repo_url)
+                repo_url = self.stdscr.instr(y, 0).strip().decode("utf-8")
+                if self.is_url(repo_url):
+                    path = self.draw_textbox()
+                    self.stdscr.touchwin()  # TODO: why does this work?
+                    return path, repo_url
 
             self.stdscr.refresh()
