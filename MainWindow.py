@@ -88,7 +88,6 @@ class MainWindow:
         success_msg = f"Cloned {repo} to {destination}."
         popup_window = self.windows.pop()
         popup_window.erase()
-        # border is erased in prev call; redrawing
         popup_window.box()
         popup_window.addstr(self.QUARTER_LINES - 2,
                             self.HALF_COLS // 2 - len(success_msg) // 2,
