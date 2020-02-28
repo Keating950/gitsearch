@@ -1,35 +1,48 @@
 import curses
-import re
 from collections import deque
 from curses import textpad
-from typing import List, Tuple
-from Entry import Entry
-from EntryPages import EntryPages
+from typing import List, Tuple, Dict, Union
+
+Entry3 = Tuple[str, str, str]
+Entry4 = Tuple[str, str, str, str]
 
 
 class MainWindow:
-    def __init__(self, stdscr: curses.window, entries: List[Entry]):
+    def __init__(self, stdscr: curses.window, results: List[dict]):
         self.stdscr = stdscr
         self.entry_pages = None
         self.QUARTER_LINES = curses.LINES // 4
         self.QUARTER_COLS = curses.COLS // 4
         self.HALF_LINES = curses.LINES // 2
         self.HALF_COLS = curses.COLS // 2
-        self.entry_pages = EntryPages(entries, curses.LINES)
-        self.entry_pages.draw_page(self.stdscr)
-        self.stdscr.refresh()
+        self._pages = _make_pages(results)
+        self._current_page = 0
+        self.draw_page()
         self.stdscr.move(0, 0)
         self.windows = deque()
 
-    def is_url(self, text: str) -> bool:
-        return bool(
-            re.match(
-                r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
-                r"a-zA-Z0-9("
-                r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)",
-                text,
-            )
-        )
+    def __getattr__(self, attr):
+        return self.stdscr.__getattribute__(attr)
+
+    def draw_page(self):
+        pos = 0
+        for entry in self._pages[self._current_page]:
+            tmp_pos = pos
+            self.addnstr(tmp_pos, 0, entry[0], curses.COLS - 1, curses.A_BOLD)
+            tmp_pos += 1
+            for i in range(1, len(entry)):
+                self.addnstr(tmp_pos, 0, entry[i], curses.COLS - 1)
+                tmp_pos += 1
+            pos += len(entry)
+
+    def turn_page(self, direction: int) -> bool:
+        new_page = self._current_page + direction
+        if (0 > new_page) or (new_page >= len(self._pages)):
+            return False
+        self._current_page = new_page
+        self.erase()
+        self.draw_page()
+        return True
 
     def redraw_results(self) -> None:
         self.stdscr.erase()
@@ -121,38 +134,43 @@ class MainWindow:
         del err_win
         self.redraw_results()
 
-    def move_highlight(self, window: curses.window, prev_line_relative: int) -> None:
-        y, _ = window.getyx()
-        window.chgat(y + prev_line_relative, 0, curses.A_NORMAL)
-        window.chgat(y, 0, curses.A_STANDOUT)
+    def move_highlight(self, prev_line_relative: int) -> None:
+        # TODO: fix bug where bold is restored when scrolling up but not down
+        y, _ = self.stdscr.getyx()
+        is_bold = bool(self.stdscr.inch(y, 0) & curses.A_BOLD)
+        if is_bold:
+            self.stdscr.chgat(y + prev_line_relative, 0, curses.A_BOLD)
+        else:
+            self.stdscr.chgat(y + prev_line_relative, 0, curses.A_NORMAL)
+        self.stdscr.chgat(y, 0, curses.A_STANDOUT)
 
-    def input_stream(self) -> Tuple[str, str]:
-        curses.curs_set(0)
-        self.stdscr.chgat(0, 0, curses.A_STANDOUT)
-        while True:
-            y, _ = self.stdscr.getyx()
-            c = self.stdscr.getkey()
-            if c == "j":
-                if y + 1 < curses.LINES:
-                    self.stdscr.move(y + 1, 0)
-                    self.move_highlight(self.stdscr, -1)
-            elif c == "k":
-                if y - 1 >= 0:
-                    self.stdscr.move(y - 1, 0)
-                    self.move_highlight(self.stdscr, 1)
-            elif c == "\t":
-                self.entry_pages.turn_page(self.stdscr, 1)
-                self.stdscr.move(y, 0)
-                self.move_highlight(self.stdscr, 0)
-            elif c == "KEY_BTAB":
-                self.entry_pages.turn_page(self.stdscr, -1)
-                self.stdscr.move(y, 0)
-                self.move_highlight(self.stdscr, 0)
-            elif c == "\n":
-                repo_url = self.stdscr.instr(y, 0).strip().decode("utf-8")
-                if self.is_url(repo_url):
-                    path = self.draw_textbox()
-                    self.stdscr.touchwin()
-                    return path, repo_url
 
-            self.stdscr.refresh()
+def _make_pages(results: List[dict]):
+    def make_entry(repo: Dict[str, Union[str, dict]]) -> Union[Entry3, Entry4]:
+        title_str = f"{repo['name']}\t" \
+                    f"{repo['owner']['login']}\t" \
+                    f"{repo.get('lang') + '   ' if repo.get('lang') is not None else ''}" \
+                    f"{repo['stargazers_count']}"
+        desc = repo.get("description")
+        url = repo["url"]
+        if desc:
+            return title_str, desc, url, "\n"
+        return title_str, url, "\n"
+
+    entries = [make_entry(repo) for repo in results]
+    entry_idx = 0
+    page_lines = 0
+    pages = []
+    page = []
+    while entry_idx < len(entries):
+        entry = entries[entry_idx]
+        # leave 1 for bottom bar
+        if page_lines + len(entry) < curses.LINES-1:
+            page.append(entry)
+            page_lines += len(entry)
+            entry_idx += 1
+        else:
+            pages.append(page)
+            page = []
+            page_lines = 0
+    return pages

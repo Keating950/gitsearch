@@ -3,8 +3,9 @@
 import argparse
 import curses
 import os
-from typing import Union
 from subprocess import CalledProcessError
+from typing import Union, Tuple
+
 import FetchResults
 from MainWindow import MainWindow
 
@@ -30,7 +31,7 @@ def parse_args() -> argparse.Namespace:
         nargs=1,
         choices=("stars", "forks", "help-wanted-issues", "updated"),
         help="Sort by stars, forks, help-wanted-issues, or updated."
-        " Default is best match.",
+             " Default is best match.",
     )
     parser.add_argument(
         "--order",
@@ -60,18 +61,49 @@ def format_validate_path(dest_path: str) -> Union[Exception, str]:
     return abs_path
 
 
+def input_stream(window: MainWindow) -> Tuple[str, str]:
+    curses.curs_set(0)
+    window.chgat(0, 0, curses.A_STANDOUT)
+    while True:
+        y, _ = window.getyx()
+        c = window.getkey()
+        if c == "j":
+            if y + 1 < curses.LINES:
+                window.move(y + 1, 0)
+                window.move_highlight(-1)
+        elif c == "k":
+            if y - 1 >= 0:
+                window.move(y - 1, 0)
+                window.move_highlight(1)
+        elif c == "l":
+            window.turn_page(1)
+            window.move(y, 0)
+            window.move_highlight(0)
+        elif c == "h":
+            if window.turn_page(-1):
+                window.move(y, 0)
+                window.move_highlight(0)
+        elif c == "\n":
+            repo_url = window.instr(y, 0).strip().decode("utf-8")
+            if FetchResults.is_url(repo_url):
+                path = window.draw_textbox()
+                window.touchwin()
+                return path, repo_url
+
+        window.refresh()
+
+
 if __name__ == "__main__":
     formatted_args = parse_args()
     stdscr = curses.initscr()
     curses.noecho()
     curses.cbreak()
     stdscr.keypad(True)
-    entries = FetchResults.gen_entries(FetchResults.fetch(formatted_args))
+    entries = FetchResults.search(formatted_args)
     main_window = MainWindow(stdscr, entries)
-
     try:
         while True:
-            path, url = main_window.input_stream()
+            path, url = input_stream(main_window)
             try:
                 path_f = format_validate_path(path)
                 FetchResults.clone_repo(path_f, url)

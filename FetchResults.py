@@ -1,8 +1,20 @@
-from Entry import Entry
 import argparse
-import requests as r
 import os
+import re
 import subprocess
+
+import requests as r
+
+
+def is_url(text: str) -> bool:
+    return bool(
+        re.match(
+            r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.["
+            r"a-zA-Z0-9("
+            r")]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&/=]*)",
+            text,
+        )
+    )
 
 
 def format_query(args: argparse.Namespace):
@@ -19,7 +31,7 @@ def format_query(args: argparse.Namespace):
     args.query = qstring
 
 
-def send_request(args: argparse.Namespace) -> list:
+def _send_request(args: argparse.Namespace) -> list:
     param_dict = {"q": args.query}
     if args.sort != None:
         param_dict["sort"] = args.sort
@@ -34,25 +46,10 @@ def send_request(args: argparse.Namespace) -> list:
     return resp.json()["items"]
 
 
-def fetch(args: argparse.Namespace) -> list:
+def search(args: argparse.Namespace) -> list:
     format_query(args)
-    results = send_request(args)
+    results = _send_request(args)
     return results
-
-
-def gen_entries(results: list) -> list:
-    entries = []
-    for repo in results:
-        entry = Entry(
-            repo["name"],
-            repo["owner"]["login"],
-            int(repo["stargazers_count"]),
-            repo["html_url"],
-            repo.get("language"),
-            repo.get("description"),
-        )
-        entries.append(entry)
-    return entries
 
 
 def clone_repo(path: str, url: str) -> None:
