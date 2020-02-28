@@ -1,6 +1,6 @@
 # Gitsearch
 Simple command line utility for searching and cloning repos from Github.
-Move the cursor with Vim-style hjkl inputs. Flip pages with Tab and Shift+Tab.
+Move the cursor and turn pages with Vim-style hjkl inputs.
 ```
 usage: gitsearch.py [-h] [--sort statistic] [--order asc, desc] [--lang lang] "query"
 

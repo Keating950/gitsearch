@@ -13,9 +13,9 @@ from MainWindow import MainWindow
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="""A simple command line utility for\
-                                         searching for and cloning repos from\
-                                         Github.\nMove the cursor with Vim-style hjkl\
-                                         inputs. Flip pages with Tab and Shift+Tab."""
+                             searching for and cloning repos from Github.
+                             Move the cursor and turn pages with\
+                             Vim-style hjkl inputs."""
     )
     parser.add_argument(
         "query",

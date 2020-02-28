@@ -5,6 +5,7 @@ from typing import List, Tuple, Dict, Union
 
 Entry3 = Tuple[str, str, str]
 Entry4 = Tuple[str, str, str, str]
+Page = List[Union[Entry3, Entry4]]
 
 
 class MainWindow:
@@ -24,7 +25,7 @@ class MainWindow:
     def __getattr__(self, attr):
         return self.stdscr.__getattribute__(attr)
 
-    def draw_page(self):
+    def draw_page(self) -> None:
         pos = 0
         for entry in self._pages[self._current_page]:
             tmp_pos = pos
@@ -145,7 +146,7 @@ class MainWindow:
         self.stdscr.chgat(y, 0, curses.A_STANDOUT)
 
 
-def _make_pages(results: List[dict]):
+def _make_pages(results: List[dict]) -> List[Page]:
     def make_entry(repo: Dict[str, Union[str, dict]]) -> Union[Entry3, Entry4]:
         title_str = f"{repo['name']}\t" \
                     f"{repo['owner']['login']}\t" \
@@ -165,7 +166,7 @@ def _make_pages(results: List[dict]):
     while entry_idx < len(entries):
         entry = entries[entry_idx]
         # leave 1 for bottom bar
-        if page_lines + len(entry) < curses.LINES-1:
+        if page_lines + len(entry) < curses.LINES - 1:
             page.append(entry)
             page_lines += len(entry)
             entry_idx += 1
