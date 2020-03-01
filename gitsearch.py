@@ -3,7 +3,6 @@
 import argparse
 import curses
 import os
-from subprocess import CalledProcessError
 from typing import Union, Tuple
 
 import FetchResults
@@ -86,7 +85,7 @@ def input_stream(window: MainWindow) -> Tuple[str, str]:
         elif c == "\n":
             repo_url = window.instr(y, 0).strip().decode("utf-8")
             if FetchResults.is_url(repo_url):
-                path = window.draw_textbox()
+                path = window.path_prompt()
                 window.touchwin()
                 return path, repo_url
 
@@ -107,11 +106,11 @@ if __name__ == "__main__":
             try:
                 path_f = format_validate_path(path)
                 FetchResults.clone_repo(path_f, url)
-                main_window.clear_popup_win(url.split("/")[-1], path_f)
+                main_window.draw_clone_success_msg(url.split("/")[-1], path_f)
             except FileNotFoundError:
                 main_window.draw_path_error_window(path)
                 continue
-            except CalledProcessError as e:
+            except Exception as e:
                 curses.endwin()
                 raise e
     except KeyboardInterrupt:

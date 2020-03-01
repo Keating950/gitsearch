@@ -50,15 +50,25 @@ class MainWindow:
         self.entry_pages.draw_page(self.stdscr)
         self.stdscr.refresh()
 
-    def draw_textbox(self) -> str:
+    def path_prompt(self) -> str:
         def key_validator(key: int) -> int or None:
+            if key not in (10, 27, 127):
+                return key
             # enter/return
             if key == 10:
                 return 7
+            # # escape or alt
+            # elif key == 27:
+            #     self.nodelay(True)
+            #     # if no other key follows, it was esc
+            #     key2 = self.getch()
+            #     if key2 == -1:
+            #         self.nodelay(False)
+            #         early_exit()
+            #     self.nodelay(False)
             elif key == 127:
                 box.do_command(curses.KEY_BACKSPACE)
                 return
-            return key
 
         # Hierarchy:
         # popup_window: Visual container for prompt. Includes border.
@@ -68,6 +78,7 @@ class MainWindow:
         popup_window = curses.newwin(
             self.HALF_LINES, self.HALF_COLS, self.QUARTER_LINES, self.QUARTER_COLS
         )
+        self.windows.append(popup_window)
         popup_window.box()
         popup_window.overlay(self.stdscr)
         # centering text by taking half_cols - ((length of phrase) // 2)
@@ -83,14 +94,13 @@ class MainWindow:
             self.QUARTER_LINES + self.HALF_LINES // 2,
             self.QUARTER_COLS + 2,
         )
+
         box = textpad.Textbox(input_window)
         curses.curs_set(1)
         popup_window.refresh()
         box.edit(key_validator)
         path = box.gather()
         curses.curs_set(0)
-        del box
-        del input_window
         popup_window.erase()
         # border is erased in prev call; redrawing
         popup_window.box()
@@ -101,7 +111,7 @@ class MainWindow:
         self.windows.append(popup_window)
         return path
 
-    def clear_popup_win(self, repo: str, destination: str) -> None:
+    def draw_clone_success_msg(self, repo: str, destination: str) -> None:
         success_msg = f"Cloned {repo} to {destination}."
         popup_window = self.windows.pop()
         popup_window.erase()
