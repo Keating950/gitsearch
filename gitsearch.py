@@ -98,7 +98,11 @@ if __name__ == "__main__":
     curses.noecho()
     curses.cbreak()
     stdscr.keypad(True)
-    entries = FetchResults.search(formatted_args)
+    try:
+        entries = FetchResults.search(formatted_args)
+    except Exception as e:
+        curses.endwin()
+        raise e
     main_window = MainWindow(stdscr, entries)
     try:
         while True:
