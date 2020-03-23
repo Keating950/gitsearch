@@ -44,7 +44,7 @@ def format_query(args: argparse.Namespace) -> str:
 
 def _send_request(url: str) -> List[dict]:
     http = urllib3.PoolManager(
-        headers={"User-Agent": "Keating950/Gitsearch"},
+        headers={"User-Agent": "Keating950/gitsearch"},
         cert_reqs='CERT_REQUIRED',
         ca_certs=certifi.where()
     )

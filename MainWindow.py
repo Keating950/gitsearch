@@ -1,17 +1,15 @@
 import curses
-from collections import deque
 from curses import textpad
 from typing import List, Tuple, Dict, Union
 
-Entry3 = Tuple[str, str, str]
-Entry4 = Tuple[str, str, str, str]
+Entry3 = Tuple[str, str, str]  # three-line entry
+Entry4 = Tuple[str, str, str, str]  # four-line entry
 Page = List[Union[Entry3, Entry4]]
 
 
 class MainWindow:
     def __init__(self, stdscr: curses.window, results: List[dict]):
         self.stdscr = stdscr
-        self.entry_pages = None
         self.QUARTER_LINES = curses.LINES // 4
         self.QUARTER_COLS = curses.COLS // 4
         self.HALF_LINES = curses.LINES // 2
@@ -20,7 +18,7 @@ class MainWindow:
         self._current_page = 0
         self.draw_page()
         self.stdscr.move(0, 0)
-        self.windows = deque()
+        self.windows = []
 
     def __getattr__(self, attr):
         return self.stdscr.__getattribute__(attr)
@@ -47,7 +45,7 @@ class MainWindow:
 
     def redraw_results(self) -> None:
         self.stdscr.erase()
-        self.entry_pages.draw_page(self.stdscr)
+        self.draw_page()
         self.stdscr.refresh()
 
     def move(self, y, x) -> None:
@@ -57,12 +55,14 @@ class MainWindow:
         self.stdscr.move(y, x)
 
     def path_prompt(self) -> str:
+
         def key_validator(key: int) -> int or None:
             if key not in (10, 27, 127):
                 return key
-            # enter/return
-            if key == 10:
-                return 7
+            if key == 10:  # enter/return
+                return 7  # termination escape sequence
+            if key == 27:  # escape
+                raise KeyboardInterrupt
             elif key == 127:
                 box.do_command(curses.KEY_BACKSPACE)
                 return
@@ -95,7 +95,12 @@ class MainWindow:
         box = textpad.Textbox(input_window)
         curses.curs_set(1)
         popup_window.refresh()
-        box.edit(key_validator)
+        try:
+            box.edit(key_validator)
+        except KeyboardInterrupt:
+            popup_window.erase()
+            self.redraw_results()
+            return ''
         path = box.gather()
         curses.curs_set(0)
         popup_window.erase()

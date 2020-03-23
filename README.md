@@ -15,7 +15,3 @@ optional arguments:
   --lang lang        Restrict results by programming language.
 
 ```
-
-## Roadmap
-* Support for resizing terminal windows
-* General UI polish

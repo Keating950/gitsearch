@@ -5,7 +5,7 @@ import curses
 import os
 from typing import Union, Tuple
 
-import FetchResults
+import networking
 from MainWindow import MainWindow
 
 
@@ -80,7 +80,7 @@ def input_stream(window: MainWindow) -> Tuple[str, str]:
                 window.move(y, 0)
         elif c == "\n":
             repo_url = window.instr(y, 0).strip().decode("utf-8")
-            if FetchResults.is_url(repo_url):
+            if networking.is_url(repo_url):
                 dest_path = window.path_prompt()
                 window.touchwin()
                 return dest_path, repo_url
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     curses.cbreak()
     stdscr.keypad(True)
     try:
-        entries = FetchResults.search(formatted_args)
+        entries = networking.search(formatted_args)
     except Exception as e:
         curses.endwin()
         raise e
@@ -105,9 +105,11 @@ if __name__ == "__main__":
     try:
         while True:
             path, url = input_stream(main_window)
+            if not path:
+                continue
             try:
                 path_f = format_validate_path(path)
-                FetchResults.clone_repo(path_f, url)
+                networking.clone_repo(path_f, url)
                 main_window.draw_clone_success_msg(url.split("/")[-1], path_f)
             except FileNotFoundError:
                 main_window.draw_path_error_window(path)
