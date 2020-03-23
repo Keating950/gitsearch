@@ -69,25 +69,23 @@ def input_stream(window: MainWindow) -> Tuple[str, str]:
         if c == "j":
             if y + 1 < curses.LINES:
                 window.move(y + 1, 0)
-                window.move_highlight(-1)
         elif c == "k":
             if y - 1 >= 0:
                 window.move(y - 1, 0)
-                window.move_highlight(1)
         elif c == "l":
             window.turn_page(1)
             window.move(y, 0)
-            window.move_highlight(0)
         elif c == "h":
             if window.turn_page(-1):
                 window.move(y, 0)
-                window.move_highlight(0)
         elif c == "\n":
             repo_url = window.instr(y, 0).strip().decode("utf-8")
             if FetchResults.is_url(repo_url):
-                path = window.path_prompt()
+                dest_path = window.path_prompt()
                 window.touchwin()
-                return path, repo_url
+                return dest_path, repo_url
+        elif c == "q":
+            raise KeyboardInterrupt()
 
         window.refresh()
 

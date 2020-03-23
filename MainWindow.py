@@ -29,7 +29,7 @@ class MainWindow:
         pos = 0
         for entry in self._pages[self._current_page]:
             tmp_pos = pos
-            self.addnstr(tmp_pos, 0, entry[0], curses.COLS - 1, curses.A_BOLD)
+            self.addnstr(tmp_pos, 0, entry[0], curses.COLS - 1)
             tmp_pos += 1
             for i in range(1, len(entry)):
                 self.addnstr(tmp_pos, 0, entry[i], curses.COLS - 1)
@@ -50,6 +50,12 @@ class MainWindow:
         self.entry_pages.draw_page(self.stdscr)
         self.stdscr.refresh()
 
+    def move(self, y, x) -> None:
+        y_old, _ = self.stdscr.getyx()
+        self.stdscr.chgat(y_old, 0, curses.A_NORMAL)
+        self.stdscr.chgat(y, 0, curses.A_STANDOUT)
+        self.stdscr.move(y, x)
+
     def path_prompt(self) -> str:
         def key_validator(key: int) -> int or None:
             if key not in (10, 27, 127):
@@ -57,15 +63,6 @@ class MainWindow:
             # enter/return
             if key == 10:
                 return 7
-            # # escape or alt
-            # elif key == 27:
-            #     self.nodelay(True)
-            #     # if no other key follows, it was esc
-            #     key2 = self.getch()
-            #     if key2 == -1:
-            #         self.nodelay(False)
-            #         early_exit()
-            #     self.nodelay(False)
             elif key == 127:
                 box.do_command(curses.KEY_BACKSPACE)
                 return
@@ -144,16 +141,6 @@ class MainWindow:
         err_win.getkey()
         del err_win
         self.redraw_results()
-
-    def move_highlight(self, prev_line_relative: int) -> None:
-        # TODO: fix bug where bold is restored when scrolling up but not down
-        y, _ = self.stdscr.getyx()
-        is_bold = bool(self.stdscr.inch(y, 0) & curses.A_BOLD)
-        if is_bold:
-            self.stdscr.chgat(y + prev_line_relative, 0, curses.A_BOLD)
-        else:
-            self.stdscr.chgat(y + prev_line_relative, 0, curses.A_NORMAL)
-        self.stdscr.chgat(y, 0, curses.A_STANDOUT)
 
 
 def _make_pages(results: List[dict]) -> List[Page]:
