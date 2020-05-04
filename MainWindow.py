@@ -1,10 +1,12 @@
 import curses
+import os
 from collections import namedtuple
 from curses import textpad
 from typing import List, Tuple, Dict, Union
 
 Entry3 = Tuple[str, str, str]  # three-line entry
 Entry4 = Tuple[str, str, str, str]  # four-line entry
+
 # page: Tuple(List[Union[Entry3, Entry4]], Int)
 Page = namedtuple("Page", ["entries", "last_line"])
 
@@ -61,15 +63,14 @@ class MainWindow:
     def path_prompt(self) -> str:
 
         def key_validator(key: int) -> int or None:
-            if key not in (10, 27, 127):
-                return key
             if key == 10:  # enter/return
                 return 7  # termination escape sequence
-            if key == 27:  # escape
+            elif key == 27:  # Esc key
                 raise KeyboardInterrupt
             elif key == 127:
                 box.do_command(curses.KEY_BACKSPACE)
-                return
+            else:
+                return key
 
         # Hierarchy:
         # popup_window: Visual container for prompt. Includes border.
@@ -96,7 +97,9 @@ class MainWindow:
             self.QUARTER_LINES + self.HALF_LINES // 2,
             self.QUARTER_COLS + 2,
         )
-
+        default_path = os.getcwd().replace(os.path.expanduser("~"), "~") + "/"
+        # max length is one fewer than input_window's width
+        input_window.addnstr(0, 0, default_path, self.HALF_COLS - 5)
         box = textpad.Textbox(input_window)
         curses.curs_set(1)
         popup_window.refresh()

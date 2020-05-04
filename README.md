@@ -15,3 +15,7 @@ optional arguments:
   --lang lang        Restrict results by programming language.
 
 ```
+
+## TODO:
+* Enable horizontal scrolling in path input window, enabling the input of paths
+    longer than the input window is wide. 

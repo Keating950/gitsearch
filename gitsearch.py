@@ -5,7 +5,7 @@ import curses
 import json
 import re
 from os import chdir, getcwd
-from subprocess import check_call, DEVNULL
+from subprocess import check_call, DEVNULL, CalledProcessError
 from typing import Union, Tuple, List
 
 import certifi
@@ -109,7 +109,11 @@ def search(args: argparse.Namespace) -> List[dict]:
 def clone_repo(clone_dest: str, repo_url: str) -> None:
     orig_wd = getcwd()
     chdir(clone_dest)
-    check_call(["git", "clone", repo_url], stdout=DEVNULL, stderr=DEVNULL)
+    try:
+        check_call(["git", "clone", repo_url], stdout=DEVNULL, stderr=DEVNULL)
+    except CalledProcessError as cpe:
+        chdir(orig_wd)
+        raise cpe
     chdir(orig_wd)
 
 
