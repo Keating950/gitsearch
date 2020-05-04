@@ -1,21 +1,25 @@
 import curses
+import os
+from collections import namedtuple
 from curses import textpad
 from typing import List, Tuple, Dict, Union
 
 Entry3 = Tuple[str, str, str]  # three-line entry
 Entry4 = Tuple[str, str, str, str]  # four-line entry
-Page = List[Union[Entry3, Entry4]]
+
+# page: Tuple(List[Union[Entry3, Entry4]], Int)
+Page = namedtuple("Page", ["entries", "last_line"])
 
 
 class MainWindow:
-    def __init__(self, stdscr: curses.window, results: List[dict]):
+    def __init__(self, stdscr, results: List[dict]):
         self.stdscr = stdscr
         self.QUARTER_LINES = curses.LINES // 4
         self.QUARTER_COLS = curses.COLS // 4
         self.HALF_LINES = curses.LINES // 2
         self.HALF_COLS = curses.COLS // 2
         self._pages = _make_pages(results)
-        self._current_page = 0
+        self._current_page_idx = 0
         self.draw_page()
         self.stdscr.move(0, 0)
         self.windows = []
@@ -25,7 +29,7 @@ class MainWindow:
 
     def draw_page(self) -> None:
         pos = 0
-        for entry in self._pages[self._current_page]:
+        for entry in self._pages[self._current_page_idx].entries:
             tmp_pos = pos
             self.addnstr(tmp_pos, 0, entry[0], curses.COLS - 1)
             tmp_pos += 1
@@ -35,10 +39,10 @@ class MainWindow:
             pos += len(entry)
 
     def turn_page(self, direction: int) -> bool:
-        new_page = self._current_page + direction
+        new_page = self._current_page_idx + direction
         if (0 > new_page) or (new_page >= len(self._pages)):
             return False
-        self._current_page = new_page
+        self._current_page_idx = new_page
         self.erase()
         self.draw_page()
         return True
@@ -48,24 +52,25 @@ class MainWindow:
         self.draw_page()
         self.stdscr.refresh()
 
-    def move(self, y, x) -> None:
-        y_old, _ = self.stdscr.getyx()
-        self.stdscr.chgat(y_old, 0, curses.A_NORMAL)
+    def move(self, y: int) -> None:
+        y_current, _ = self.stdscr.getyx()
+        if (0 > y) or (y > self._pages[self._current_page_idx].last_line):
+            return
+        self.stdscr.chgat(y_current, 0, curses.A_NORMAL)
         self.stdscr.chgat(y, 0, curses.A_STANDOUT)
-        self.stdscr.move(y, x)
+        self.stdscr.move(y, 0)
 
     def path_prompt(self) -> str:
 
         def key_validator(key: int) -> int or None:
-            if key not in (10, 27, 127):
-                return key
             if key == 10:  # enter/return
                 return 7  # termination escape sequence
-            if key == 27:  # escape
+            elif key == 27:  # Esc key
                 raise KeyboardInterrupt
             elif key == 127:
                 box.do_command(curses.KEY_BACKSPACE)
-                return
+            else:
+                return key
 
         # Hierarchy:
         # popup_window: Visual container for prompt. Includes border.
@@ -73,7 +78,8 @@ class MainWindow:
         #   gather() results clean.
         # box: Textbox object for actual editing.
         popup_window = curses.newwin(
-            self.HALF_LINES, self.HALF_COLS, self.QUARTER_LINES, self.QUARTER_COLS
+            self.HALF_LINES, self.HALF_COLS, self.QUARTER_LINES,
+            self.QUARTER_COLS
         )
         self.windows.append(popup_window)
         popup_window.box()
@@ -91,7 +97,9 @@ class MainWindow:
             self.QUARTER_LINES + self.HALF_LINES // 2,
             self.QUARTER_COLS + 2,
         )
-
+        default_path = os.getcwd().replace(os.path.expanduser("~"), "~") + "/"
+        # max length is one fewer than input_window's width
+        input_window.addnstr(0, 0, default_path, self.HALF_COLS - 5)
         box = textpad.Textbox(input_window)
         curses.curs_set(1)
         popup_window.refresh()
@@ -132,7 +140,8 @@ class MainWindow:
 
     def draw_path_error_window(self, input_path: str) -> None:
         err_win = curses.newwin(
-            self.HALF_LINES, self.HALF_COLS, self.QUARTER_LINES, self.QUARTER_COLS
+            self.HALF_LINES, self.HALF_COLS, self.QUARTER_LINES,
+            self.QUARTER_COLS
         )
         err_win.overlay(self.stdscr)
         err_win.box()
@@ -162,18 +171,19 @@ def _make_pages(results: List[dict]) -> List[Page]:
 
     entries = [make_entry(repo) for repo in results]
     entry_idx = 0
-    page_lines = 0
+    nlines = 0
     pages = []
-    page = []
+    page_contents = []
     while entry_idx < len(entries):
         entry = entries[entry_idx]
         # leave 1 for bottom bar
-        if page_lines + len(entry) < curses.LINES - 1:
-            page.append(entry)
-            page_lines += len(entry)
+        if nlines + len(entry) < curses.LINES - 1:
+            page_contents.append(entry)
+            # account for zero-indexing
+            nlines += len(entry) - 1
             entry_idx += 1
         else:
-            pages.append(page)
-            page = []
-            page_lines = 0
+            pages.append(Page(page_contents, nlines))
+            page_contents = []
+            nlines = 0
     return pages
